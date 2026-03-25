@@ -1,49 +1,19 @@
 const core = require("@actions/core");
 const { execSync } = require("child_process");
-const path = require("path");
 const cache = require("@actions/cache");
-
-function parseBooleanInput(value, defaultValue = false) {
-    const normalized = value.trim().toLowerCase();
-    return { 'true': true, 'false': false }[normalized] ?? defaultValue;
-}
+const { parseBooleanInput, buildBaseConfig } = require("./utils");
 
 async function fetchCache() {
     try {
-        const paths = [];
-        const restoreKeys = [];
-
-        const mixkey = core.getInput("mixkey");
-        const prefix = core.getInput("prefix");
         const cleanUpCache = parseBooleanInput(core.getInput("clean"));
-
         if (cleanUpCache) return;
 
-        if (prefix) {
-            process.chdir(prefix);
-            core.debug(`Changed working directory to: ${prefix}`);
-        }
-
-        let keyString = mixkey ? `${mixkey}-cache-openwrt` : "cache-openwrt";
-
-        const cacheToolchain = parseBooleanInput(core.getInput("toolchain"), true);
+        const { keyString: baseKey, paths, cacheToolchain, cacheCcache } = buildBaseConfig();
         const skipBuildingToolchain = parseBooleanInput(core.getInput("skip"), true);
 
-        if (cacheToolchain) {
-            const toolchainHash = execSync('git log --pretty=tformat:"%h" -n1 tools toolchain')
-                .toString()
-                .trim();
+        let keyString = baseKey;
+        const restoreKeys = [];
 
-            keyString += `-${toolchainHash}`;
-            paths.push(
-                path.join("staging_dir", "host*"),
-                path.join("staging_dir", "tool*")
-            );
-        } else {
-            core.debug("Skipping toolchain processing");
-        }
-
-        const cacheCcache = parseBooleanInput(core.getInput("ccache"));
         if (cacheCcache) {
             const timestamp = execSync("date +%s").toString().trim();
             restoreKeys.unshift(keyString);
@@ -51,8 +21,14 @@ async function fetchCache() {
             paths.push(".ccache");
         }
 
+        if (paths.length === 0) {
+            core.debug("No paths configured for caching, skipping");
+            return;
+        }
+
+        core.debug(`Cache key: ${keyString}`);
+        core.debug(`Cache restore keys: ${restoreKeys.join(", ")}`);
         core.debug(`Cache paths: ${paths.join(", ")}`);
-        console.log(keyString, restoreKeys);
 
         const cacheFetchingResult = await cache.restoreCache(paths, keyString, restoreKeys);
 
@@ -69,7 +45,6 @@ async function fetchCache() {
         }
     } catch (error) {
         core.setFailed(error.message);
-        process.exit(1);
     }
 }
 
