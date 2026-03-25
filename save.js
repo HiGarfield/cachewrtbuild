@@ -1,56 +1,48 @@
 const core = require("@actions/core");
 const { execSync } = require("child_process");
-const path = require("path");
 const cache = require("@actions/cache");
-
-function parseBooleanInput(value, defaultValue = false) {
-    const normalized = value.trim().toLowerCase();
-    return { 'true': true, 'false': false }[normalized] ?? defaultValue;
-}
+const { parseBooleanInput, buildBaseConfig } = require("./utils");
 
 async function saveCache() {
     try {
+        const cleanUpCache = parseBooleanInput(core.getInput("clean"));
+        if (cleanUpCache) {
+            core.debug("Cache clean requested, skipping save");
+            return;
+        }
+
         const skipSaving = parseBooleanInput(core.getInput("skip_saving"));
+        if (skipSaving) {
+            core.debug("skip_saving is set, skipping save");
+            return;
+        }
+
         const cacheState = core.getState("CACHE_STATE");
+        if (cacheState === "hit") {
+            core.debug("Cache was already restored, skipping save");
+            return;
+        }
 
-        if (cacheState !== "hit" && !skipSaving) {
-            const paths = [];
-            const mixkey = core.getInput("mixkey");
-            let keyString = mixkey ? `${mixkey}-cache-openwrt` : "cache-openwrt";
+        const { keyString: baseKey, paths, cacheCcache } = buildBaseConfig();
 
-            const prefix = core.getInput("prefix");
-            if (prefix) {
-                process.chdir(prefix);
-                core.debug(`Changed working directory to: ${prefix}`);
-            }
+        let keyString = baseKey;
+        if (cacheCcache) {
+            const timestamp = execSync("date +%s").toString().trim();
+            keyString += `-${timestamp}`;
+            paths.push(".ccache");
+        }
 
-            const cacheToolchain = parseBooleanInput(core.getInput("toolchain"), true);
-            if (cacheToolchain) {
-                const toolchainHash = execSync(
-                    'git log --pretty=tformat:"%h" -n1 tools toolchain'
-                ).toString().trim();
+        if (paths.length === 0) {
+            core.debug("No paths configured for caching, skipping");
+            return;
+        }
 
-                keyString += `-${toolchainHash}`;
-                paths.push(
-                    path.join("staging_dir", "host*"),
-                    path.join("staging_dir", "tool*")
-                );
-            }
+        core.debug(`Saving cache with key: ${keyString}`);
+        core.debug(`Cache paths: ${paths.join(", ")}`);
 
-            const cacheCcache = parseBooleanInput(core.getInput("ccache"));
-            if (cacheCcache) {
-                const timestamp = execSync("date +%s").toString().trim();
-                keyString += `-${timestamp}`;
-                paths.push(".ccache");
-            }
-
-            console.log(keyString);
-
-            await cache.saveCache(paths, keyString)
-                .then(res => {
-                    if (res) console.log(res, " cache saved");
-                })
-                .catch(err => core.error(`Cache save failed: ${err.stack}`));
+        const cacheId = await cache.saveCache(paths, keyString);
+        if (cacheId) {
+            core.info(`Cache saved with key: ${keyString} (id: ${cacheId})`);
         }
     } catch (error) {
         core.warning(error.message);
