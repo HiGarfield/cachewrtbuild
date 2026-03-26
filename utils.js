@@ -1,6 +1,6 @@
-const core = require("@actions/core");
-const { execSync } = require("child_process");
-const path = require("path");
+import * as core from "@actions/core";
+import { execSync } from "child_process";
+import path from "path";
 
 function parseBooleanInput(value, defaultValue = false) {
     const normalized = value.trim().toLowerCase();
@@ -35,4 +35,4 @@ function buildBaseConfig() {
     return { keyString, paths, cacheToolchain, cacheCcache };
 }
 
-module.exports = { parseBooleanInput, buildBaseConfig };
+export { parseBooleanInput, buildBaseConfig };

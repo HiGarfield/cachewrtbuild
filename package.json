@@ -2,6 +2,7 @@
   "name": "cachewrtbuild-action",
   "version": "1.0.0",
   "description": "This action caches builds to speed up openwrt compilation.",
+  "type": "module",
   "main": "fetch.js",
   "repository": {
     "type": "git",
