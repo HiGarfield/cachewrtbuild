@@ -1,52 +1,37 @@
-const core = require("@actions/core");
-const { execSync } = require("child_process");
-const cache = require("@actions/cache");
-const { parseBooleanInput, buildBaseConfig } = require("./utils");
+import * as core from "@actions/core";
+import * as cache from "@actions/cache";
+import { buildBaseConfig } from "./utils.js";
 
-async function saveCache() {
-    try {
-        const cleanUpCache = parseBooleanInput(core.getInput("clean"));
-        if (cleanUpCache) {
-            core.debug("Cache clean requested, skipping save");
-            return;
-        }
-
-        const skipSaving = parseBooleanInput(core.getInput("skip_saving"));
-        if (skipSaving) {
-            core.debug("skip_saving is set, skipping save");
-            return;
-        }
-
-        const cacheState = core.getState("CACHE_STATE");
-        if (cacheState === "hit") {
-            core.debug("Cache was already restored, skipping save");
-            return;
-        }
-
+try {
+    const cleanUpCache = core.getBooleanInput("clean");
+    if (cleanUpCache) {
+        core.debug("Cache clean requested, skipping save");
+    } else if (core.getBooleanInput("skip_saving")) {
+        core.debug("skip_saving is set, skipping save");
+    } else if (core.getState("CACHE_STATE") === "hit") {
+        core.debug("Cache was already restored, skipping save");
+    } else {
         const { keyString: baseKey, paths, cacheCcache } = buildBaseConfig();
 
         let keyString = baseKey;
         if (cacheCcache) {
-            const timestamp = execSync("date +%s").toString().trim();
+            const timestamp = Math.floor(Date.now() / 1000).toString();
             keyString += `-${timestamp}`;
             paths.push(".ccache");
         }
 
-        if (paths.length === 0) {
+        if (paths.length > 0) {
+            core.debug(`Saving cache with key: ${keyString}`);
+            core.debug(`Cache paths: ${paths.join(", ")}`);
+
+            const cacheId = await cache.saveCache(paths, keyString);
+            if (cacheId) {
+                core.info(`Cache saved with key: ${keyString} (id: ${cacheId})`);
+            }
+        } else {
             core.debug("No paths configured for caching, skipping");
-            return;
         }
-
-        core.debug(`Saving cache with key: ${keyString}`);
-        core.debug(`Cache paths: ${paths.join(", ")}`);
-
-        const cacheId = await cache.saveCache(paths, keyString);
-        if (cacheId) {
-            core.info(`Cache saved with key: ${keyString} (id: ${cacheId})`);
-        }
-    } catch (error) {
-        core.warning(error.message);
     }
+} catch (error) {
+    core.warning(error.message);
 }
-
-saveCache();

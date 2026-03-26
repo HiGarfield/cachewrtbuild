@@ -1,9 +1,9 @@
 ---
 name: "@actions/cache"
-version: 4.0.3
+version: 6.0.0
 type: npm
-summary: 
-homepage: 
+summary: Actions cache lib
+homepage: https://github.com/actions/toolkit/tree/main/packages/cache
 license: mit
 licenses:
 - sources: LICENSE.md
