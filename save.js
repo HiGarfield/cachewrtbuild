@@ -1,7 +1,7 @@
-const core = require("@actions/core");
-const { execSync } = require("child_process");
-const cache = require("@actions/cache");
-const { parseBooleanInput, buildBaseConfig } = require("./utils");
+import * as core from "@actions/core";
+import { execSync } from "child_process";
+import * as cache from "@actions/cache";
+import { parseBooleanInput, buildBaseConfig } from "./utils.js";
 
 async function saveCache() {
     try {
