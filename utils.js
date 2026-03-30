@@ -1,13 +1,8 @@
-const core = require("@actions/core");
-const { execSync } = require("child_process");
-const path = require("path");
+import * as core from "@actions/core";
+import { execSync } from "node:child_process";
+import path from "node:path";
 
-function parseBooleanInput(value, defaultValue = false) {
-    const normalized = value.trim().toLowerCase();
-    return { 'true': true, 'false': false }[normalized] ?? defaultValue;
-}
-
-function buildBaseConfig() {
+export function buildBaseConfig() {
     const prefix = core.getInput("prefix");
     if (prefix) {
         process.chdir(prefix);
@@ -18,7 +13,7 @@ function buildBaseConfig() {
     let keyString = mixkey ? `${mixkey}-cache-openwrt` : "cache-openwrt";
     const paths = [];
 
-    const cacheToolchain = parseBooleanInput(core.getInput("toolchain"), true);
+    const cacheToolchain = core.getBooleanInput("toolchain");
     if (cacheToolchain) {
         const toolchainHash = execSync('git log --pretty=tformat:"%h" -n1 tools toolchain')
             .toString()
@@ -30,9 +25,7 @@ function buildBaseConfig() {
         );
     }
 
-    const cacheCcache = parseBooleanInput(core.getInput("ccache"));
+    const cacheCcache = core.getBooleanInput("ccache");
 
     return { keyString, paths, cacheToolchain, cacheCcache };
 }
-
-module.exports = { parseBooleanInput, buildBaseConfig };

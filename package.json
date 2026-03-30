@@ -1,21 +1,25 @@
 {
   "name": "cachewrtbuild-action",
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "type": "module",
   "description": "This action caches builds to speed up openwrt compilation.",
   "main": "fetch.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/klever1988/cachewrtbuild.git"
+    "url": "git+https://github.com/HiGarfield/cachewrtbuild.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/klever1988/cachewrtbuild/issues"
+    "url": "https://github.com/HiGarfield/cachewrtbuild/issues"
   },
-  "homepage": "https://github.com/klever1988/cachewrtbuild#readme",
+  "homepage": "https://github.com/HiGarfield/cachewrtbuild#readme",
+  "engines": {
+    "node": ">=24"
+  },
   "dependencies": {
-    "@actions/cache": "^4.0.2",
-    "@actions/core": "^1.11.1"
+    "@actions/cache": "^6.0.0",
+    "@actions/core": "^3.0.0"
   }
 }
