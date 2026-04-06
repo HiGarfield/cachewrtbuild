@@ -25,7 +25,7 @@ try {
             core.debug(`Cache paths: ${paths.join(", ")}`);
 
             const cacheId = await cache.saveCache(paths, keyString);
-            if (cacheId) {
+            if (cacheId !== -1) {
                 core.info(`Cache saved with key: ${keyString} (id: ${cacheId})`);
             }
         } else {
