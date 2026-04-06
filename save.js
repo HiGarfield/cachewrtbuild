@@ -33,5 +33,5 @@ try {
         }
     }
 } catch (error) {
-    core.warning(error.message);
+    core.warning(error instanceof Error ? error.message : String(error));
 }
