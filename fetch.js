@@ -29,7 +29,9 @@ try {
             if (cacheFetchingResult) {
                 core.info(`${cacheFetchingResult} cache fetched!`);
                 core.setOutput("hit", "1");
-                core.saveState("CACHE_STATE", "hit");
+                if (cacheFetchingResult === keyString) {
+                    core.saveState("CACHE_STATE", "hit");
+                }
 
                 if (cacheToolchain && skipBuildingToolchain) {
                     execSync("sed -i 's/ $(tool.*\\/stamp-compile)//;' Makefile");
