@@ -8,19 +8,19 @@ This action caches builds to speed up openwrt compilation.
 
 ### `ccache`
 
-Check if to cache ccache. Default `'false'`.
+Check if to cache ccache. Default `false`.
 
 ### `toolchain`
 
-Check if to cache toolchain. Default `'true'`.
+Check if to cache toolchain. Default `true`.
 
 ### `skip`
 
-Check if to skip the compilation of toolchain. Default `'true'`.
+Check if to skip the compilation of toolchain. Default `true`.
 
 ### `clean`
 
-Set to clean cache. Default `'false'`.
+Set to clean cache. Default `false`.
 
 ### `prefix`
 
@@ -32,7 +32,7 @@ Mix a key to identify a cache when you build openwrt for different architecture.
 
 ### `skip_saving`
 
-Skip saving. Default `'false'`.
+Skip saving. Default `false`.
 
 ## Output
 
@@ -45,6 +45,6 @@ Indicate cache found.
 ```yaml
 uses: klever1988/cachewrtbuild@main
 with:
-  ccache: 'true'
+  ccache: true
   mixkey: 'ramips'
   prefix: 'openwrt'

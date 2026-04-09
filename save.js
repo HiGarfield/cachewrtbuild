@@ -1,60 +1,37 @@
-const core = require("@actions/core");
-const { execSync } = require("child_process");
-const path = require("path");
-const cache = require("@actions/cache");
+import * as core from "@actions/core";
+import * as cache from "@actions/cache";
+import { buildBaseConfig } from "./utils.js";
 
-function parseBooleanInput(value, defaultValue = false) {
-    const normalized = value.trim().toLowerCase();
-    return { 'true': true, 'false': false }[normalized] ?? defaultValue;
-}
+try {
+    const cleanUpCache = core.getBooleanInput("clean");
+    if (cleanUpCache) {
+        core.debug("Cache clean requested, skipping save");
+    } else if (core.getBooleanInput("skip_saving")) {
+        core.debug("skip_saving is set, skipping save");
+    } else if (core.getState("CACHE_STATE") === "hit") {
+        core.debug("Cache was already restored, skipping save");
+    } else {
+        const { keyString: baseKey, paths, cacheCcache } = buildBaseConfig();
 
-async function saveCache() {
-    try {
-        const skipSaving = parseBooleanInput(core.getInput("skip_saving"));
-        const cacheState = core.getState("CACHE_STATE");
-
-        if (cacheState !== "hit" && !skipSaving) {
-            const paths = [];
-            const mixkey = core.getInput("mixkey");
-            let keyString = mixkey ? `${mixkey}-cache-openwrt` : "cache-openwrt";
-
-            const prefix = core.getInput("prefix");
-            if (prefix) {
-                process.chdir(prefix);
-                core.debug(`Changed working directory to: ${prefix}`);
-            }
-
-            const cacheToolchain = parseBooleanInput(core.getInput("toolchain"), true);
-            if (cacheToolchain) {
-                const toolchainHash = execSync(
-                    'git log --pretty=tformat:"%h" -n1 tools toolchain'
-                ).toString().trim();
-
-                keyString += `-${toolchainHash}`;
-                paths.push(
-                    path.join("staging_dir", "host*"),
-                    path.join("staging_dir", "tool*")
-                );
-            }
-
-            const cacheCcache = parseBooleanInput(core.getInput("ccache"));
-            if (cacheCcache) {
-                const timestamp = execSync("date +%s").toString().trim();
-                keyString += `-${timestamp}`;
-                paths.push(".ccache");
-            }
-
-            console.log(keyString);
-
-            await cache.saveCache(paths, keyString)
-                .then(res => {
-                    if (res) console.log(res, " cache saved");
-                })
-                .catch(err => core.error(`Cache save failed: ${err.stack}`));
+        let keyString = baseKey;
+        if (cacheCcache) {
+            const timestamp = Math.floor(Date.now() / 1000).toString();
+            keyString += `-${timestamp}`;
+            paths.push(".ccache");
         }
-    } catch (error) {
-        core.warning(error.message);
-    }
-}
 
-saveCache();
+        if (paths.length > 0) {
+            core.debug(`Saving cache with key: ${keyString}`);
+            core.debug(`Cache paths: ${paths.join(", ")}`);
+
+            const cacheId = await cache.saveCache(paths, keyString);
+            if (cacheId > -1) {
+                core.info(`Cache saved with key: ${keyString} (id: ${cacheId})`);
+            }
+        } else {
+            core.debug("No paths configured for caching, skipping");
+        }
+    }
+} catch (error) {
+    core.warning(error instanceof Error ? error.message : String(error));
+}

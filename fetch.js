@@ -1,76 +1,48 @@
-const core = require("@actions/core");
-const { execSync } = require("child_process");
-const path = require("path");
-const cache = require("@actions/cache");
+import * as core from "@actions/core";
+import { execSync } from "node:child_process";
+import * as cache from "@actions/cache";
+import { buildBaseConfig } from "./utils.js";
 
-function parseBooleanInput(value, defaultValue = false) {
-    const normalized = value.trim().toLowerCase();
-    return { 'true': true, 'false': false }[normalized] ?? defaultValue;
-}
+try {
+    const cleanUpCache = core.getBooleanInput("clean");
+    if (!cleanUpCache) {
+        const { keyString: baseKey, paths, cacheToolchain, cacheCcache } = buildBaseConfig();
+        const skipBuildingToolchain = core.getBooleanInput("skip");
 
-async function fetchCache() {
-    try {
-        const paths = [];
+        let keyString = baseKey;
         const restoreKeys = [];
 
-        const mixkey = core.getInput("mixkey");
-        const prefix = core.getInput("prefix");
-        const cleanUpCache = parseBooleanInput(core.getInput("clean"));
-
-        if (cleanUpCache) return;
-
-        if (prefix) {
-            process.chdir(prefix);
-            core.debug(`Changed working directory to: ${prefix}`);
-        }
-
-        let keyString = mixkey ? `${mixkey}-cache-openwrt` : "cache-openwrt";
-
-        const cacheToolchain = parseBooleanInput(core.getInput("toolchain"), true);
-        const skipBuildingToolchain = parseBooleanInput(core.getInput("skip"), true);
-
-        if (cacheToolchain) {
-            const toolchainHash = execSync('git log --pretty=tformat:"%h" -n1 tools toolchain')
-                .toString()
-                .trim();
-
-            keyString += `-${toolchainHash}`;
-            paths.push(
-                path.join("staging_dir", "host*"),
-                path.join("staging_dir", "tool*")
-            );
-        } else {
-            core.debug("Skipping toolchain processing");
-        }
-
-        const cacheCcache = parseBooleanInput(core.getInput("ccache"));
         if (cacheCcache) {
-            const timestamp = execSync("date +%s").toString().trim();
+            const timestamp = Math.floor(Date.now() / 1000).toString();
             restoreKeys.unshift(keyString);
             keyString += `-${timestamp}`;
             paths.push(".ccache");
         }
 
-        core.debug(`Cache paths: ${paths.join(", ")}`);
-        console.log(keyString, restoreKeys);
+        if (paths.length > 0) {
+            core.debug(`Cache key: ${keyString}`);
+            core.debug(`Cache restore keys: ${restoreKeys.join(", ")}`);
+            core.debug(`Cache paths: ${paths.join(", ")}`);
 
-        const cacheFetchingResult = await cache.restoreCache(paths, keyString, restoreKeys);
+            const cacheFetchingResult = await cache.restoreCache(paths, keyString, restoreKeys);
 
-        if (cacheFetchingResult) {
-            core.info(`${cacheFetchingResult} cache fetched!`);
-            core.setOutput("hit", "1");
-            core.saveState("CACHE_STATE", "hit");
+            if (cacheFetchingResult) {
+                core.info(`${cacheFetchingResult} cache fetched!`);
+                core.setOutput("hit", "1");
+                if (cacheFetchingResult === keyString) {
+                    core.saveState("CACHE_STATE", "hit");
+                }
 
-            if (cacheToolchain && skipBuildingToolchain) {
-                execSync("sed -i 's/ $(tool.*\\/stamp-compile)//;' Makefile");
-                execSync("sed -i 's/ $(tool.*\\/stamp-install)//;' Makefile");
-                core.info("Toolchain building skipped");
+                if (cacheToolchain && skipBuildingToolchain) {
+                    execSync("sed -i 's/ $(tool.*\\/stamp-compile)//;' Makefile");
+                    execSync("sed -i 's/ $(tool.*\\/stamp-install)//;' Makefile");
+                    core.info("Toolchain building skipped");
+                }
             }
+        } else {
+            core.debug("No paths configured for caching, skipping");
         }
-    } catch (error) {
-        core.setFailed(error.message);
-        process.exit(1);
     }
+} catch (error) {
+    core.setFailed(error instanceof Error ? error.message : String(error));
 }
-
-fetchCache();
