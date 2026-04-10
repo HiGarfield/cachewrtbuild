@@ -34,6 +34,11 @@ Mix a key to identify a cache when you build openwrt for different architecture.
 
 Skip saving. Default `false`.
 
+### `extra_paths`
+
+Additional cache directories to include (one per line, can specify multiple). Default `''`.
+Relative paths are resolved against the directory set by `prefix` (i.e. the openwrt build root); absolute paths are also supported.
+
 ## Output
 
 ### `hit`
@@ -48,3 +53,7 @@ with:
   ccache: true
   mixkey: 'ramips'
   prefix: 'openwrt'
+  extra_paths: |
+    path/to/extra/dir1
+    path/to/extra/dir2
+```
