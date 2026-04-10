@@ -37,6 +37,7 @@ Skip saving. Default `false`.
 ### `extra_paths`
 
 Additional cache directories to include (one per line, can specify multiple). Default `''`.
+Relative paths are resolved against the directory set by `prefix` (i.e. the openwrt build root); absolute paths are also supported.
 
 ## Output
 
@@ -47,7 +48,7 @@ Indicate cache found.
 ## Example usage
 
 ```yaml
-uses: klever1988/cachewrtbuild@main
+uses: HiGarfield/cachewrtbuild@main
 with:
   ccache: true
   mixkey: 'ramips'
