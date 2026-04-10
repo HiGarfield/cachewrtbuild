@@ -29,6 +29,10 @@ inputs:
     description: 'skip saving'
     required: false
     default: 'false'
+  extra_paths:
+    description: 'additional cache directories to include (one per line, can specify multiple)'
+    required: false
+    default: ''
 outputs:
   hit:
     description: 'indicate cache found'
