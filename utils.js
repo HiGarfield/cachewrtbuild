@@ -21,6 +21,8 @@ export function buildBaseConfig() {
         keyString += `-${toolchainHash}`;
         paths.push(
             path.join("staging_dir", "host*"),
+            path.join("dl", "go-mod-cache"),
+            path.join("dl", "rustc"),
             path.join("staging_dir", "tool*")
         );
     }
