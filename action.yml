@@ -29,7 +29,7 @@ inputs:
     description: 'skip saving'
     required: false
     default: 'false'
-  other_paths:
+  extra_paths:
     description: 'additional cache directories to include (one per line, can specify multiple)'
     required: false
     default: ''

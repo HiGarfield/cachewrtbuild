@@ -27,7 +27,7 @@ export function buildBaseConfig() {
 
     const cacheCcache = core.getBooleanInput("ccache");
 
-    const otherPaths = core.getMultilineInput("other_paths").filter(Boolean);
+    const otherPaths = core.getMultilineInput("extra_paths").filter(Boolean);
     if (otherPaths.length > 0) {
         paths.push(...otherPaths);
     }
