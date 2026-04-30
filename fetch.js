@@ -7,7 +7,6 @@ try {
     const cleanUpCache = core.getBooleanInput("clean");
     if (!cleanUpCache) {
         const { keyString: baseKey, paths, cacheToolchain, cacheCcache } = buildBaseConfig();
-        const skipBuildingToolchain = core.getBooleanInput("skip");
 
         let keyString = baseKey;
         const restoreKeys = [];
@@ -33,11 +32,16 @@ try {
                     core.saveState("CACHE_STATE", "hit");
                 }
 
-                if (cacheToolchain && skipBuildingToolchain) {
-                    execSync("sed -i 's/ $(tool.*\\/stamp-compile)//;' Makefile");
-                    execSync("sed -i 's/ $(tool.*\\/stamp-install)//;' Makefile");
-                    core.info("Toolchain building skipped");
+                if (cacheToolchain) {
+                    const skipBuildingToolchain = core.getBooleanInput("skip");
+                    if (skipBuildingToolchain) {
+                        execSync("sed -i 's/ $(tool.*\\/stamp-compile)//;' Makefile");
+                        execSync("sed -i 's/ $(tool.*\\/stamp-install)//;' Makefile");
+                        core.info("Toolchain building skipped");
+                    }
                 }
+            } else {
+                core.setOutput("hit", "0");
             }
         } else {
             core.debug("No paths configured for caching, skipping");

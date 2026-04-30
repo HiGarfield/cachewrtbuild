@@ -18,7 +18,15 @@ export function buildBaseConfig() {
         const toolchainHash = execSync('git log --pretty=tformat:"%h" -n1 tools toolchain')
             .toString()
             .trim();
-        keyString += `-${toolchainHash}`;
+        if (toolchainHash) {
+            keyString += `-${toolchainHash}`;
+        } else {
+            core.warning(
+                "Could not determine toolchain hash from git log " +
+                "(tools/toolchain may have no commits or the clone may be shallow). " +
+                "Cache key will not include a toolchain-specific hash."
+            );
+        }
         paths.push(
             path.join("staging_dir", "host*"),
             path.join("staging_dir", "tool*")
