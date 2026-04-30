@@ -15,15 +15,21 @@ export function buildBaseConfig() {
 
     const cacheToolchain = core.getBooleanInput("toolchain");
     if (cacheToolchain) {
-        const toolchainHash = execSync('git log --pretty=tformat:"%h" -n1 tools toolchain')
-            .toString()
-            .trim();
+        let toolchainHash = "";
+        try {
+            toolchainHash = execSync('git log --pretty=tformat:"%h" -n1 tools toolchain')
+                .toString()
+                .trim();
+        } catch {
+            // fall through to the empty-hash warning below
+        }
         if (toolchainHash) {
             keyString += `-${toolchainHash}`;
         } else {
             core.warning(
                 "Could not determine toolchain hash from git log " +
-                "(tools/toolchain may have no commits or the clone may be shallow). " +
+                "(tools/toolchain may have no commits, the clone may be shallow, " +
+                "or no .git directory is present). " +
                 "Cache key will not include a toolchain-specific hash."
             );
         }
